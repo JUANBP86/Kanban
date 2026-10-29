@@ -1,0 +1,176 @@
+<!-- Fragment: Calendario -->
+<div class="h-full flex flex-col bg-slate-900 text-slate-200">
+
+  <style>
+    /* FullCalendar dark overrides */
+    #fc-calendar-el { padding: 1rem; border: 1px solid #dbe3ec; border-radius: 0.75rem; background: #fff; }
+    .fc { --fc-border-color: #dbe3ec; --fc-bg-event-opacity: 0.9; --fc-page-bg-color: #fff; --fc-neutral-bg-color: #f1f5f9; }
+    .fc-theme-standard td,
+    .fc-theme-standard th,
+    .fc-theme-standard .fc-scrollgrid { border-color: #dbe3ec; }
+    .fc-col-header-cell, .fc-scrollgrid-sync-inner { background: #f1f5f9; }
+    .fc-col-header-cell-cushion { color: #475569; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none; }
+    .fc-daygrid-day { background: #fff; }
+    .fc-daygrid-day:hover { background: #f8fafc; }
+    .fc-daygrid-day-number { color: #475569; font-size: 0.75rem; text-decoration: none; }
+    .fc-day-other { background: #f8fafc; }
+    .fc-day-today { background: #eff6ff !important; }
+    .fc-day-today .fc-daygrid-day-number { color: #1d4ed8; font-weight: 700; }
+    .fc-toolbar-title { color: #0f172a; font-size: 1rem; font-weight: 700; }
+    .fc-button { background: #fff !important; border-color: #cbd5e1 !important; color: #334155 !important; font-size: 0.75rem !important; padding: 0.375rem 0.75rem !important; }
+    .fc-button:hover { background: #eff6ff !important; border-color: #93c5fd !important; }
+    .fc-button-primary:not(:disabled).fc-button-active { background: #1d4ed8 !important; border-color: #1d4ed8 !important; color: #fff !important; }
+    .fc-event { border-radius: 6px; border: none; font-size: 0.7rem; font-weight: 600; padding: 1px 4px; cursor: pointer; }
+    .fc-event-title { font-size: 0.7rem; }
+    .fc-popover { background: #fff; border: 1px solid #dbe3ec; border-radius: 12px; box-shadow: 0 10px 40px rgba(15,23,42,0.18); }
+    .fc-popover-title { background: #f1f5f9; color: #0f172a; font-size: 0.75rem; font-weight: 600; padding: 8px 12px; }
+    .fc-more-link { color: #1d4ed8; font-size: 0.7rem; font-weight: 600; }
+  </style>
+
+  <div class="flex-1 overflow-auto p-5">
+    <div class="mb-4 flex justify-end">
+      <button id="meeting-create-button" type="button" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500">
+        + Nueva reunión
+      </button>
+    </div>
+    <div id="fc-calendar-el"></div>
+  </div>
+</div>
+
+{% include "fragments/calendar_meetings.html" %}
+
+<div id="panel-calendar-task-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-labelledby="panel-calendar-task-title">
+  <section class="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 text-slate-200 shadow-2xl">
+    <header class="flex items-center justify-between gap-4 border-b border-slate-700 px-6 py-4">
+      <div class="min-w-0">
+        <p id="panel-calendar-task-board" class="mb-1 truncate text-xs text-slate-500"></p>
+        <h2 id="panel-calendar-task-title" class="truncate text-base font-semibold text-slate-100">Detalle de tarea</h2>
+      </div>
+      <button id="panel-calendar-task-close" type="button" class="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-slate-700 hover:text-white" aria-label="Cerrar detalles">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </header>
+    <div class="space-y-5 overflow-y-auto px-6 py-5">
+      <p id="panel-calendar-task-description" class="whitespace-pre-wrap text-sm text-slate-300"></p>
+      <p id="panel-calendar-task-error" class="hidden rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400" role="alert"></p>
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div><p class="mb-1 text-xs text-slate-500">Estado</p><p id="panel-calendar-task-status" class="text-slate-200"></p></div>
+        <div><p class="mb-1 text-xs text-slate-500">Prioridad</p><p id="panel-calendar-task-priority" class="text-slate-200"></p></div>
+        <div><p class="mb-1 text-xs text-slate-500">Fecha de inicio</p><p id="panel-calendar-task-start" class="text-slate-200"></p></div>
+        <div><p class="mb-1 text-xs text-slate-500">Vencimiento</p><p id="panel-calendar-task-deadline" class="text-slate-200"></p></div>
+      </div>
+      <div>
+        <p class="mb-2 text-xs text-slate-500">Responsable</p>
+        <p id="panel-calendar-task-assignee" class="text-sm text-slate-200"></p>
+      </div>
+      <div>
+        <p class="mb-2 text-xs text-slate-500">Etiquetas</p>
+        <div id="panel-calendar-task-tags" class="flex flex-wrap gap-2"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
+
+<script>
+(function() {
+  "use strict";
+
+  const modal = document.getElementById("panel-calendar-task-modal");
+  const closeModal = () => {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  };
+  document.getElementById("panel-calendar-task-close").addEventListener("click", closeModal);
+  modal.addEventListener("click", event => {
+    if (event.target === modal) closeModal();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
+  });
+
+  const formatDate = value => {
+    if (!value) return "Sin fecha";
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString("es");
+  };
+  const setText = (id, value) => {
+    document.getElementById(id).textContent = value;
+  };
+  const openTaskDetails = async event => {
+    const props = event.extendedProps;
+    setText("panel-calendar-task-board", props.board || "");
+    setText("panel-calendar-task-title", event.title);
+    setText("panel-calendar-task-description", "Cargando detalles...");
+    setText("panel-calendar-task-status", "");
+    setText("panel-calendar-task-priority", "");
+    setText("panel-calendar-task-start", "");
+    setText("panel-calendar-task-deadline", "");
+    setText("panel-calendar-task-assignee", "");
+    document.getElementById("panel-calendar-task-tags").replaceChildren();
+    const error = document.getElementById("panel-calendar-task-error");
+    error.classList.add("hidden");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+
+    try {
+      const response = await fetch(`/api/tasks/${encodeURIComponent(event.id)}`);
+      if (!response.ok) throw new Error("No se pudieron cargar los detalles de la tarea.");
+      const task = await response.json();
+      const statuses = { todo: "Por Hacer", in_progress: "En Progreso", review: "En Revisión", done: "Completada" };
+      const priorities = { baja: "Baja", media: "Media", alta: "Alta" };
+      setText("panel-calendar-task-title", task.title);
+      setText("panel-calendar-task-description", task.description || "Sin descripción.");
+      setText("panel-calendar-task-status", statuses[task.status] || task.status);
+      setText("panel-calendar-task-priority", priorities[task.priority] || task.priority);
+      setText("panel-calendar-task-start", formatDate(task.fecha_inicio));
+      setText("panel-calendar-task-deadline", task.deadline || "Sin fecha");
+      setText("panel-calendar-task-assignee", task.assignee ? task.assignee.name : "Sin asignar");
+      const tags = document.getElementById("panel-calendar-task-tags");
+      if (task.tags && task.tags.length) {
+        task.tags.forEach(tag => {
+          const chip = document.createElement("span");
+          chip.className = "rounded-full px-2.5 py-1 text-xs font-medium text-white";
+          chip.style.backgroundColor = tag.color;
+          chip.textContent = tag.name;
+          tags.appendChild(chip);
+        });
+      } else {
+        setText("panel-calendar-task-tags", "Sin etiquetas");
+      }
+    } catch (requestError) {
+      setText("panel-calendar-task-description", "");
+      setText("panel-calendar-task-error", requestError.message);
+      error.classList.remove("hidden");
+    }
+  };
+
+  setTimeout(() => {
+    const calEl = document.getElementById("fc-calendar-el");
+    if(!calEl || typeof FullCalendar === "undefined") {
+      console.warn("FullCalendar not loaded yet");
+      return;
+    }
+
+    const calendar = new FullCalendar.Calendar(calEl, {
+      initialView:  "dayGridMonth",
+      locale:       "es",
+      height:       "auto",
+      headerToolbar: {
+        left:   "prev,next today",
+        center: "title",
+        right:  "dayGridMonth,timeGridWeek,listMonth"
+      },
+      events: "/api/tareas",
+      eventColor: "#1d4ed8"
+    });
+    window.initCalendarMeetings(calendar, event => {
+      if(window._panelOpen) window._panelOpen("kanban");
+    });
+    calendar.render();
+  }, 100);
+})();
+</script>

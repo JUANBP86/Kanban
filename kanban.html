@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Tablero de Producción - ABC Gotuplas{% endblock %}
+{% block page_title %}Planta de Producción & Taller (Kanban){% endblock %}
+
+{% block top_actions %}
+<a href="/produccion/lista" class="btn btn-secondary btn-sm">Vista Tabla</a>
+<a href="/pedidos/nuevo" class="btn btn-primary btn-sm">+ Nuevo Pedido</a>
+{% endblock %}
+
+{% block content %}
+<div class="kanban-board">
+  <!-- COLUMNA 1: EN COLA -->
+  <div class="kanban-col col-cola">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">
+        <span class="kanban-col-dot"></span>
+        <span>1. En Cola</span>
+      </div>
+      <span class="kanban-col-count">{{ columnas['En Cola']|length }}</span>
+    </div>
+    <div class="kanban-cards-list">
+      {% for op in columnas['En Cola'] %}
+        {% include "produccion/_card.html" %}
+      {% endfor %}
+      {% if columnas['En Cola']|length == 0 %}
+      <div style="text-align:center; padding:30px 10px; color:var(--text-dim); font-size:12px;">
+        Sin órdenes en cola
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- COLUMNA 2: EN FABRICACIÓN -->
+  <div class="kanban-col col-fab">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">
+        <span class="kanban-col-dot"></span>
+        <span>2. En Fabricación</span>
+      </div>
+      <span class="kanban-col-count">{{ columnas['En Fabricacion']|length }}</span>
+    </div>
+    <div class="kanban-cards-list">
+      {% for op in columnas['En Fabricacion'] %}
+        {% include "produccion/_card.html" %}
+      {% endfor %}
+      {% if columnas['En Fabricacion']|length == 0 %}
+      <div style="text-align:center; padding:30px 10px; color:var(--text-dim); font-size:12px;">
+        Sin órdenes en fabricación
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- COLUMNA 3: CONTROL DE CALIDAD -->
+  <div class="kanban-col col-qc">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">
+        <span class="kanban-col-dot"></span>
+        <span>3. Control de Calidad</span>
+      </div>
+      <span class="kanban-col-count">{{ columnas['Control de Calidad']|length }}</span>
+    </div>
+    <div class="kanban-cards-list">
+      {% for op in columnas['Control de Calidad'] %}
+        {% include "produccion/_card.html" %}
+      {% endfor %}
+      {% if columnas['Control de Calidad']|length == 0 %}
+      <div style="text-align:center; padding:30px 10px; color:var(--text-dim); font-size:12px;">
+        Sin órdenes en inspección
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- COLUMNA 4: TERMINADO / LISTO -->
+  <div class="kanban-col col-done">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">
+        <span class="kanban-col-dot"></span>
+        <span>4. Terminado</span>
+      </div>
+      <span class="kanban-col-count">{{ columnas['Terminado']|length }}</span>
+    </div>
+    <div class="kanban-cards-list">
+      {% for op in columnas['Terminado'] %}
+        {% include "produccion/_card.html" %}
+      {% endfor %}
+      {% if columnas['Terminado']|length == 0 %}
+      <div style="text-align:center; padding:30px 10px; color:var(--text-dim); font-size:12px;">
+        Sin órdenes terminadas
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

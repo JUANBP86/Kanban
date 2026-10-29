@@ -1,0 +1,82 @@
+<div class="kanban-card" data-op-id="{{ op.id }}">
+  <div class="kanban-card-top">
+    <span class="kanban-card-code">{{ op.codigo_op }}</span>
+    <div>
+      {% if op.pedido.prioridad == 'Urgente' %}
+      <span class="badge" style="background:rgba(239,68,68,0.25); color:#fca5a5; font-size:10px;">Urgente</span>
+      {% elif op.pedido.prioridad == 'Alta' %}
+      <span class="badge" style="background:rgba(245,158,11,0.25); color:#fde047; font-size:10px;">Alta</span>
+      {% endif %}
+      <a href="/pedidos/{{ op.pedido.id }}" style="font-size:11px; color:#60a5fa; margin-left:4px;" title="Ver Pedido">
+        {{ op.pedido.numero_pedido }}
+      </a>
+    </div>
+  </div>
+
+  <div class="kanban-card-client">
+    <a href="/pedidos/{{ op.pedido.id }}" style="color:#fff; text-decoration:none;">
+      {{ op.pedido.cliente.nombre_empresa }}
+    </a>
+  </div>
+
+  <div class="kanban-card-items">
+    {% for it in op.pedido.items %}
+    <div>• {{ it.cantidad|int }}x {{ it.descripcion }}</div>
+    {% endfor %}
+  </div>
+
+  <!-- Barra de progreso -->
+  <div class="kanban-card-progress">
+    <div class="kanban-card-progress-label">
+      <span>{{ op.responsable or 'Sin operario' }}</span>
+      <span style="font-weight:700;">{{ op.porcentaje_avance }}%</span>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" style="width: {{ op.porcentaje_avance }}%;"></div>
+    </div>
+  </div>
+
+  <!-- Estado de cobro y despacho -->
+  <div style="margin-bottom:12px;">
+    {% if op.pedido.despacho_autorizado %}
+    <span class="dispatch-pill ready">
+      ✓ Pago/Crédito OK (Despacho Autorizado)
+    </span>
+    {% else %}
+    <span class="dispatch-pill locked" title="No se puede despachar sin verificar el pago">
+      🔒 Retenido: Saldo {{ op.pedido.saldo_pendiente|moneda }}
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="kanban-card-footer">
+    <div style="font-size:11px; color:var(--text-dim);">
+      📅 Entrega: {{ op.pedido.fecha_entrega_estimada|fecha }}
+    </div>
+
+    <div class="kanban-card-actions">
+      <!-- Botón de avance rápido según la fase actual -->
+      {% if op.fase == 'En Cola' %}
+      <button type="button" class="btn btn-primary btn-sm btn-mover-fase-rapido" data-op-id="{{ op.id }}" data-fase-nueva="En Fabricacion" title="Iniciar Fabricación" style="font-size:11px; padding:3px 8px;">
+        ⚙️ Fabricar →
+      </button>
+      {% elif op.fase == 'En Fabricacion' %}
+      <button type="button" class="btn btn-primary btn-sm btn-mover-fase-rapido" data-op-id="{{ op.id }}" data-fase-nueva="Control de Calidad" title="Pase a Control de Calidad" style="font-size:11px; padding:3px 8px; background:#7c3aed;">
+        🔍 Calidad →
+      </button>
+      {% elif op.fase == 'Control de Calidad' %}
+      <button type="button" class="btn btn-success btn-sm btn-mover-fase-rapido" data-op-id="{{ op.id }}" data-fase-nueva="Terminado" title="Aprobar y Finalizar Producto" style="font-size:11px; padding:3px 8px;">
+        ✅ Terminar
+      </button>
+      {% elif op.fase == 'Terminado' %}
+      <a href="/pedidos/{{ op.pedido.id }}" class="btn btn-secondary btn-sm" style="font-size:11px; padding:3px 8px;">
+        📦 Despacho
+      </a>
+      {% endif %}
+
+      <button type="button" class="btn-icon-xs" onclick="abrirModalProduccion('{{ op.id }}', '{{ op.codigo_op }}', '{{ op.fase }}', '{{ op.porcentaje_avance }}')" title="Editar avances y notas">
+        ✎
+      </button>
+    </div>
+  </div>
+</div>

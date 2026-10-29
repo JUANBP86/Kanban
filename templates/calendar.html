@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Calendario | Tablero Kanban{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
+<style>
+  #calendar { background: #fff; border: 1px solid #dbe3ec; }
+  .fc { --fc-border-color: #dbe3ec; --fc-page-bg-color: #fff; --fc-neutral-bg-color: #f1f5f9; }
+  .fc-theme-standard td, .fc-theme-standard th { border-color: #dbe3ec; }
+  .fc-col-header-cell, .fc-scrollgrid-sync-inner { background: #f1f5f9; }
+  .fc-col-header-cell-cushion { color: #475569; font-size: 0.75rem; font-weight: 600; text-decoration: none; }
+  .fc-daygrid-day { background: #fff; }
+  .fc-daygrid-day:hover { background: #f8fafc; }
+  .fc-daygrid-day-number { color: #475569; text-decoration: none; }
+  .fc-day-other { background: #f8fafc; }
+  .fc-day-today { background: #eff6ff !important; }
+  .fc-day-today .fc-daygrid-day-number { color: #1d4ed8; font-weight: 700; }
+  .fc-toolbar-title { color: #0f172a; font-size: 1.125rem; font-weight: 700; }
+  .fc-button { background: #fff !important; border-color: #cbd5e1 !important; color: #334155 !important; font-size: 0.75rem !important; }
+  .fc-button:hover { background: #eff6ff !important; border-color: #93c5fd !important; }
+  .fc-button-primary.fc-button-active { background: #1d4ed8 !important; border-color: #1d4ed8 !important; color: #fff !important; }
+  .fc-event { background: #1d4ed8; border: none; font-size: 0.7rem; border-radius: 4px; }
+  .fc-popover { background: #fff; border-color: #dbe3ec; }
+  .fc-popover-title { background: #f1f5f9; color: #0f172a; }
+  .fc-more-link { color: #1d4ed8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="w-full h-full p-6 overflow-auto">
+  <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-2xl font-bold text-white">Calendario</h1>
+      <button id="meeting-create-button" type="button" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500">
+        + Nueva reunión
+      </button>
+    </div>
+    <div id="calendar" class="bg-slate-900 rounded-lg p-4"></div>
+  </div>
+</div>
+
+{% include "fragments/calendar_meetings.html" %}
+
+<div id="calendar-task-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-labelledby="calendar-task-title">
+  <section class="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-2xl">
+    <header class="flex items-center justify-between gap-4 border-b border-slate-700 px-6 py-4">
+      <div class="min-w-0">
+        <p id="calendar-task-board" class="mb-1 truncate text-xs text-slate-500"></p>
+        <h2 id="calendar-task-title" class="truncate text-base font-semibold text-slate-100">Detalle de tarea</h2>
+      </div>
+      <button id="calendar-task-close" type="button" class="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-slate-700 hover:text-white" aria-label="Cerrar detalles">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </header>
+    <div class="space-y-5 overflow-y-auto px-6 py-5">
+      <p id="calendar-task-description" class="whitespace-pre-wrap text-sm text-slate-300"></p>
+      <p id="calendar-task-error" class="hidden rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400" role="alert"></p>
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div><p class="mb-1 text-xs text-slate-500">Estado</p><p id="calendar-task-status" class="text-slate-200"></p></div>
+        <div><p class="mb-1 text-xs text-slate-500">Prioridad</p><p id="calendar-task-priority" class="text-slate-200"></p></div>
+        <div><p class="mb-1 text-xs text-slate-500">Fecha de inicio</p><p id="calendar-task-start" class="text-slate-200"></p></div>
+        <div><p class="mb-1 text-xs text-slate-500">Vencimiento</p><p id="calendar-task-deadline" class="text-slate-200"></p></div>
+      </div>
+      <div>
+        <p class="mb-2 text-xs text-slate-500">Responsable</p>
+        <p id="calendar-task-assignee" class="text-sm text-slate-200"></p>
+      </div>
+      <div>
+        <p class="mb-2 text-xs text-slate-500">Etiquetas</p>
+        <div id="calendar-task-tags" class="flex flex-wrap gap-2"></div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("calendar-task-modal");
+  const closeModal = () => {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  };
+  document.getElementById("calendar-task-close").addEventListener("click", closeModal);
+  modal.addEventListener("click", event => {
+    if (event.target === modal) closeModal();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
+  });
+
+  const formatDate = value => {
+    if (!value) return "Sin fecha";
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString("es");
+  };
+  const setText = (id, value) => {
+    document.getElementById(id).textContent = value;
+  };
+  const openTaskDetails = async event => {
+    const props = event.extendedProps;
+    setText("calendar-task-board", props.board || "");
+    setText("calendar-task-title", event.title);
+    setText("calendar-task-description", "Cargando detalles...");
+    setText("calendar-task-status", "");
+    setText("calendar-task-priority", "");
+    setText("calendar-task-start", "");
+    setText("calendar-task-deadline", "");
+    setText("calendar-task-assignee", "");
+    document.getElementById("calendar-task-tags").replaceChildren();
+    const error = document.getElementById("calendar-task-error");
+    error.classList.add("hidden");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+
+    try {
+      const response = await fetch(`/api/tasks/${encodeURIComponent(event.id)}`);
+      if (!response.ok) throw new Error("No se pudieron cargar los detalles de la tarea.");
+      const task = await response.json();
+      const statuses = { todo: "Por Hacer", in_progress: "En Progreso", review: "En Revisión", done: "Completada" };
+      const priorities = { baja: "Baja", media: "Media", alta: "Alta" };
+      setText("calendar-task-title", task.title);
+      setText("calendar-task-description", task.description || "Sin descripción.");
+      setText("calendar-task-status", statuses[task.status] || task.status);
+      setText("calendar-task-priority", priorities[task.priority] || task.priority);
+      setText("calendar-task-start", formatDate(task.fecha_inicio));
+      setText("calendar-task-deadline", task.deadline || "Sin fecha");
+      setText("calendar-task-assignee", task.assignee ? task.assignee.name : "Sin asignar");
+      const tags = document.getElementById("calendar-task-tags");
+      if (task.tags && task.tags.length) {
+        task.tags.forEach(tag => {
+          const chip = document.createElement("span");
+          chip.className = "rounded-full px-2.5 py-1 text-xs font-medium text-white";
+          chip.style.backgroundColor = tag.color;
+          chip.textContent = tag.name;
+          tags.appendChild(chip);
+        });
+      } else {
+        setText("calendar-task-tags", "Sin etiquetas");
+      }
+    } catch (requestError) {
+      setText("calendar-task-description", "");
+      setText("calendar-task-error", requestError.message);
+      error.classList.remove("hidden");
+    }
+  };
+
+  const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
+    initialView: "dayGridMonth",
+    locale: "es",
+    height: "auto",
+    headerToolbar: {
+      left: "prev,next today",
+      center: "title",
+      right: "dayGridMonth,timeGridWeek,listMonth"
+    },
+    events: "/api/tareas"
+  });
+  window.initCalendarMeetings(calendar, openTaskDetails);
+  calendar.render();
+});
+</script>
+{% endblock %}

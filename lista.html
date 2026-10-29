@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Órdenes de Producción - ABC Gotuplas{% endblock %}
+
+{% block content %}
+<main class="min-h-screen min-w-0 p-4 sm:p-6 lg:p-8">
+  <header class="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-400">Producción · Taller</p>
+      <h1 class="text-2xl font-bold tracking-tight text-white sm:text-3xl">Órdenes de producción</h1>
+      <p class="mt-2 text-sm text-slate-400">Consulta el avance, responsables y fechas de entrega de cada orden.</p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <a href="/produccion" class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-700">
+        Tablero Kanban
+      </a>
+      <a href="/pedidos/nuevo" class="inline-flex items-center justify-center rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400">
+        <span aria-hidden="true" class="mr-2 text-lg leading-none">+</span> Nuevo pedido
+      </a>
+    </div>
+  </header>
+
+  <section class="mb-5 rounded-2xl border border-slate-800 bg-slate-800 p-4 sm:p-5" aria-label="Filtros de órdenes">
+    <form method="GET" action="/produccion/lista" class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <label for="fase" class="text-sm font-medium text-slate-300">Filtrar por fase</label>
+      <select id="fase" name="fase" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 sm:max-w-xs">
+        <option value="">Todas las fases</option>
+        {% for f in fases %}
+        <option value="{{ f }}" {% if fase_sel == f %}selected{% endif %}>{{ f }}</option>
+        {% endfor %}
+      </select>
+      {% if fase_sel %}
+      <a href="/produccion/lista" class="text-sm font-medium text-indigo-300 transition hover:text-indigo-200">Limpiar filtro</a>
+      {% endif %}
+    </form>
+  </section>
+
+  <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-800 shadow-xl shadow-black/10" aria-label="Listado de órdenes">
+    <div class="flex flex-col gap-1 border-b border-slate-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="font-semibold text-white">Órdenes activas</h2>
+      <p class="text-xs text-slate-400">Desplázate horizontalmente para ver todos los datos</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[1050px] border-collapse text-left text-sm">
+        <thead class="bg-slate-900/70 text-[11px] uppercase tracking-wider text-slate-400">
+          <tr>
+            <th scope="col" class="px-5 py-3.5 font-semibold">Código OP</th>
+            <th scope="col" class="px-5 py-3.5 font-semibold">Pedido y cliente</th>
+            <th scope="col" class="px-5 py-3.5 font-semibold">Fase en taller</th>
+            <th scope="col" class="w-40 px-5 py-3.5 font-semibold">Avance</th>
+            <th scope="col" class="px-5 py-3.5 font-semibold">Responsable</th>
+            <th scope="col" class="px-5 py-3.5 font-semibold">Estación</th>
+            <th scope="col" class="px-5 py-3.5 font-semibold">Entrega límite</th>
+            <th scope="col" class="px-5 py-3.5 font-semibold">Despacho</th>
+            <th scope="col" class="px-5 py-3.5 font-semibold">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/80">
+          {% for op in ordenes %}
+          <tr class="transition-colors hover:bg-slate-800/60">
+            <td class="whitespace-nowrap px-5 py-4">
+              <span class="font-mono text-sm font-semibold text-indigo-300">{{ op.codigo_op }}</span>
+            </td>
+            <td class="px-5 py-4">
+              <a href="/pedidos/{{ op.pedido.id }}" class="font-semibold text-sky-300 transition hover:text-sky-200 hover:underline">{{ op.pedido.numero_pedido }}</a>
+              <div class="mt-1 text-xs text-slate-400">{{ op.pedido.cliente.nombre_empresa }}</div>
+            </td>
+            <td class="whitespace-nowrap px-5 py-4">
+              {% if op.fase == 'En Cola' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-300"><span aria-hidden="true">●</span> En cola</span>
+              {% elif op.fase == 'En Fabricacion' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-sky-400/20 bg-sky-400/10 px-2.5 py-1 text-xs font-medium text-sky-300"><span aria-hidden="true">●</span> En fabricación</span>
+              {% elif op.fase == 'Control de Calidad' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/10 px-2.5 py-1 text-xs font-medium text-violet-300"><span aria-hidden="true">●</span> Control de calidad</span>
+              {% elif op.fase == 'Terminado' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-medium text-emerald-300"><span aria-hidden="true">●</span> Terminado</span>
+              {% else %}
+              <span class="inline-flex rounded-full border border-slate-600 bg-slate-700/50 px-2.5 py-1 text-xs font-medium text-slate-300">{{ op.fase }}</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-4">
+              <div class="mb-2 flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-200">{{ op.porcentaje_avance }}%</span>
+              </div>
+              <div class="h-1.5 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-label="Avance de {{ op.codigo_op }}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ op.porcentaje_avance }}">
+                <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all" style="width:{{ op.porcentaje_avance }}%;"></div>
+              </div>
+            </td>
+            <td class="whitespace-nowrap px-5 py-4 text-slate-300">{{ op.responsable or 'Sin asignar' }}</td>
+            <td class="whitespace-nowrap px-5 py-4 text-slate-300">{{ op.estacion_trabajo or 'General' }}</td>
+            <td class="whitespace-nowrap px-5 py-4 text-slate-300">{{ op.pedido.fecha_entrega_estimada.strftime('%d/%m/%Y') if op.pedido.fecha_entrega_estimada else 'Sin fecha' }}</td>
+            <td class="whitespace-nowrap px-5 py-4">
+              {% if op.pedido.despacho_autorizado %}
+              <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300"><span aria-hidden="true">✓</span> Autorizado</span>
+              {% else %}
+              <span class="inline-flex items-center gap-1.5 text-xs font-medium text-rose-300"><span aria-hidden="true">•</span> Retenido</span>
+              {% endif %}
+            </td>
+            <td class="whitespace-nowrap px-5 py-4">
+              <div class="flex items-center gap-2">
+                <button type="button" class="rounded-md bg-indigo-500/15 px-3 py-1.5 text-xs font-semibold text-indigo-200 transition hover:bg-indigo-500/25" onclick="abrirModalProduccion('{{ op.id }}', '{{ op.codigo_op }}', '{{ op.fase }}', '{{ op.porcentaje_avance }}')">
+                  Actualizar
+                </button>
+                <a href="/pedidos/{{ op.pedido.id }}" class="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700">
+                  Ficha
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="px-6 py-16 text-center">
+              <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 text-slate-400" aria-hidden="true">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+                </svg>
+              </div>
+              <p class="font-medium text-slate-200">No hay órdenes para mostrar</p>
+              <p class="mt-1 text-sm text-slate-400">{% if fase_sel %}Prueba con otra fase o limpia el filtro.{% else %}Cuando se creen órdenes, aparecerán aquí.{% endif %}</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{% endblock %}

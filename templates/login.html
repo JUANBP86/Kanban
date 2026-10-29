@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar sesión | Tablero Kanban</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body.bg-slate-900 { background-color: #0b1f33 !important; }
+    .bg-slate-800 { background-color: #132a40 !important; }
+    .bg-slate-700 { background-color: #1c344b !important; }
+    .border-slate-700, .border-slate-600 { border-color: #29445d !important; }
+    .bg-indigo-600 { background-color: #1d4ed8 !important; }
+    .bg-indigo-600:hover { background-color: #1e40af !important; }
+  </style>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
+
+  <main class="w-full max-w-sm">
+
+    <!-- Logo + título -->
+    <div class="mb-8 text-center">
+      <img src="{{ url_for('static', filename='logo.png') }}"
+           alt="Logo" class="mx-auto mb-4 h-14 w-auto object-contain rounded-xl" />
+      <h1 class="text-2xl font-bold text-white">Tablero Kanban</h1>
+      <p class="mt-1 text-sm text-slate-400">Ingresa con tu cuenta para continuar.</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl">
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div role="alert"
+              class="mb-5 flex items-start gap-3 rounded-xl px-4 py-3 text-sm
+                     {% if category == 'error' %}bg-red-900/60 border border-red-700 text-red-300
+                     {% elif category == 'success' %}bg-emerald-900/60 border border-emerald-700 text-emerald-300
+                     {% else %}bg-indigo-900/60 border border-indigo-700 text-indigo-300{% endif %}">
+              {% if category == 'error' %}
+              <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.303 3.376c.866 1.5-.217 3.374-1.948 3.374H4.645c-1.73 0-2.813-1.874-1.948-3.374L10.05 3.378c.866-1.5 3.032-1.5 3.898 0l6.355 10.998zM12 15.75h.007v.008H12v-.008z"/>
+              </svg>
+              {% endif %}
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" class="space-y-5" novalidate>
+        <div>
+          <label for="email" class="block mb-1.5 text-sm font-medium text-slate-300">Correo electrónico</label>
+          <input id="email" name="email" type="email"
+                 autocomplete="email" required autofocus
+                 class="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5
+                        text-white placeholder:text-slate-500
+                        focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40
+                        transition-colors"
+                 placeholder="nombre@empresa.com" />
+        </div>
+        <div>
+          <label for="password" class="block mb-1.5 text-sm font-medium text-slate-300">Contraseña</label>
+          <input id="password" name="password" type="password"
+                 autocomplete="current-password" required
+                 class="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5
+                        text-white placeholder:text-slate-500
+                        focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40
+                        transition-colors" />
+        </div>
+        <button type="submit"
+          class="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
+                 py-2.5 font-semibold text-white transition-colors shadow-lg shadow-indigo-900/40">
+          Iniciar sesión
+        </button>
+      </form>
+    </div>
+
+    <p class="mt-6 text-center text-xs text-slate-600">Gotuplas &copy; 2026</p>
+  </main>
+
+</body>
+</html>

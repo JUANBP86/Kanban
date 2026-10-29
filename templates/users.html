@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Usuarios - Tablero Kanban{% endblock %}
+
+{% block content %}
+<main class="min-h-screen min-w-0 p-4 sm:p-6 lg:p-8">
+  <header class="mb-7">
+    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-400">Administración</p>
+    <h1 class="text-2xl font-bold tracking-tight text-white sm:text-3xl">Usuarios</h1>
+    <p class="mt-2 text-sm text-slate-400">Administra las cuentas del equipo. El inicio de sesión se realiza con el correo electrónico.</p>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-5 space-y-3">
+        {% for category, message in messages %}
+        <div role="alert" class="rounded-xl border px-4 py-3 text-sm
+          {% if category == 'error' %}border-rose-700/60 bg-rose-950/40 text-rose-200
+          {% else %}border-emerald-700/60 bg-emerald-950/40 text-emerald-200{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+    <section class="h-fit rounded-2xl border border-slate-800 bg-slate-800 p-5 shadow-xl shadow-black/10 sm:p-6" aria-labelledby="create-user-heading">
+      <h2 id="create-user-heading" class="text-base font-semibold text-white">Agregar usuario</h2>
+      <p class="mt-1 text-sm text-slate-400">Define una contraseña inicial para habilitar el acceso de la persona.</p>
+      <form method="post" class="mt-5 space-y-4">
+        <div>
+          <label for="full_name" class="mb-1.5 block text-sm font-medium text-slate-300">Nombre completo</label>
+          <input id="full_name" name="full_name" type="text" maxlength="100" autocomplete="name" required
+                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                 placeholder="Ej. María Pérez">
+        </div>
+        <div>
+          <label for="email" class="mb-1.5 block text-sm font-medium text-slate-300">Correo electrónico</label>
+          <input id="email" name="email" type="email" maxlength="254" autocomplete="email" required
+                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                 placeholder="nombre@empresa.com">
+        </div>
+        <div>
+          <label for="password" class="mb-1.5 block text-sm font-medium text-slate-300">Contraseña inicial</label>
+          <input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required
+                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                 placeholder="Mínimo 8 caracteres">
+        </div>
+        <button type="submit" class="w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400">
+          Crear cuenta
+        </button>
+      </form>
+    </section>
+
+    <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-800 shadow-xl shadow-black/10" aria-labelledby="user-list-heading">
+      <div class="border-b border-slate-800 px-5 py-4 sm:px-6">
+        <h2 id="user-list-heading" class="font-semibold text-white">Cuentas registradas</h2>
+        <p class="mt-1 text-xs text-slate-400">{{ users|length }} cuenta{% if users|length != 1 %}s{% endif %} registradas. Las pendientes requieren contraseña para iniciar sesión.</p>
+      </div>
+      <ul class="divide-y divide-slate-800">
+        {% for user in users %}
+        <li class="px-5 py-4 sm:px-6">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">{{ user.full_name[0].upper() }}</span>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-slate-200">{{ user.full_name }}</p>
+                <p class="mt-0.5 truncate text-xs text-slate-400">{{ user.email or 'Correo pendiente' }}</p>
+              </div>
+            </div>
+            <span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium
+              {% if user.password_hash %}border-emerald-700/60 text-emerald-300{% else %}border-amber-700/60 text-amber-300{% endif %}">
+              {% if user.is_admin %}Administrador{% elif user.password_hash %}Activo{% else %}Pendiente de contraseña{% endif %}
+            </span>
+          </div>
+          <form method="post" action="{{ url_for('update_user', user_id=user.id) }}" class="grid gap-2 sm:grid-cols-2">
+            <input name="full_name" type="text" maxlength="100" value="{{ user.full_name }}" autocomplete="name" required
+                   aria-label="Nombre completo de {{ user.full_name }}"
+                   class="min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500">
+            <input name="email" type="email" maxlength="254" value="{{ user.email or '' }}" autocomplete="email" required
+                   aria-label="Correo electrónico de {{ user.full_name }}"
+                   placeholder="correo@empresa.com"
+                   class="min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500">
+            <input name="password" type="password" minlength="8" autocomplete="new-password"
+                   aria-label="Nueva contraseña de {{ user.full_name }}"
+                   placeholder="{% if user.password_hash %}Nueva contraseña (opcional){% else %}Define contraseña (mín. 8){% endif %}"
+                   {% if not user.password_hash %}required{% endif %}
+                   class="min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500">
+            <button type="submit" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-indigo-600">
+              Guardar cambios
+            </button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</main>
+{% endblock %}

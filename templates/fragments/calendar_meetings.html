@@ -1,0 +1,269 @@
+<div id="meeting-form-modal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-labelledby="meeting-form-title">
+  <form id="meeting-form" class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-6 text-slate-200 shadow-2xl">
+    <div class="mb-5 flex items-center justify-between">
+      <h2 id="meeting-form-title" class="text-lg font-semibold text-slate-100">Nueva reunión</h2>
+      <button type="button" data-close-modal="meeting-form-modal" class="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white" aria-label="Cerrar">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <p id="meeting-form-error" class="mb-4 hidden rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400" role="alert"></p>
+    <div class="space-y-4">
+      <label class="block text-xs font-medium text-slate-400">Título
+        <input name="title" required maxlength="200" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block text-xs font-medium text-slate-400">Inicio
+          <input name="start_at" type="datetime-local" required class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </label>
+        <label class="block text-xs font-medium text-slate-400">Fin
+          <input name="end_at" type="datetime-local" required class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </label>
+      </div>
+      <label class="block text-xs font-medium text-slate-400">Lugar
+        <input name="location" maxlength="300" placeholder="Sala, oficina..." class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+      </label>
+      <label class="block text-xs font-medium text-slate-400">Enlace de reunión
+        <input name="meeting_url" type="url" maxlength="1000" placeholder="https://..." class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none">
+      </label>
+      <label class="block text-xs font-medium text-slate-400">Repetir
+        <select name="recurrence" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+          <option value="none">No se repite</option>
+          <option value="weekly">Cada semana</option>
+          <option value="monthly">Cada mes</option>
+        </select>
+      </label>
+      <fieldset>
+        <legend class="mb-2 text-xs font-medium text-slate-400">Asistentes</legend>
+        <div id="meeting-attendees" class="max-h-28 space-y-2 overflow-y-auto rounded-lg border border-slate-700 p-3 text-sm"></div>
+      </fieldset>
+      <label class="block text-xs font-medium text-slate-400">Notas
+        <textarea name="description" rows="3" class="mt-1 w-full resize-y rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"></textarea>
+      </label>
+    </div>
+    <div class="mt-6 flex justify-end gap-3">
+      <button type="button" data-close-modal="meeting-form-modal" class="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-600">Cancelar</button>
+      <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Guardar reunión</button>
+    </div>
+  </form>
+</div>
+
+<div id="meeting-detail-modal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-labelledby="meeting-detail-title">
+  <section class="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-800 p-6 text-slate-200 shadow-2xl">
+    <header class="mb-5 flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-violet-400">Reunión</p>
+        <h2 id="meeting-detail-title" class="break-words text-lg font-semibold text-slate-100"></h2>
+      </div>
+      <button type="button" data-close-modal="meeting-detail-modal" class="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white" aria-label="Cerrar">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </header>
+    <p id="meeting-detail-error" class="mb-4 hidden rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400" role="alert"></p>
+    <div class="space-y-4 text-sm">
+      <p id="meeting-detail-description" class="whitespace-pre-wrap text-slate-300"></p>
+      <p><span class="text-xs text-slate-500">Fecha y hora</span><br><span id="meeting-detail-time"></span></p>
+      <p id="meeting-detail-location-row" class="hidden"><span class="text-xs text-slate-500">Lugar</span><br><span id="meeting-detail-location"></span></p>
+      <p id="meeting-detail-link-row" class="hidden"><span class="text-xs text-slate-500">Enlace</span><br><a id="meeting-detail-link" target="_blank" rel="noopener noreferrer" class="break-all text-indigo-400 underline hover:text-indigo-300"></a></p>
+      <p><span class="text-xs text-slate-500">Repetición</span><br><span id="meeting-detail-recurrence"></span></p>
+      <div><p class="mb-2 text-xs text-slate-500">Asistentes</p><div id="meeting-detail-attendees" class="flex flex-wrap gap-2"></div></div>
+    </div>
+    <div class="mt-6 flex justify-between gap-3">
+      <button id="meeting-delete-button" type="button" class="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10">Eliminar reunión</button>
+      <button type="button" data-close-modal="meeting-detail-modal" class="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-600">Cerrar</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  window.initCalendarMeetings = function(calendar, onTaskClick) {
+    const formModal = document.getElementById("meeting-form-modal");
+    const detailModal = document.getElementById("meeting-detail-modal");
+    const form = document.getElementById("meeting-form");
+    const attendeesBox = document.getElementById("meeting-attendees");
+    let activeMeetingId = null;
+
+    const showModal = modal => {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    };
+    const closeModal = modal => {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    };
+    const setText = (id, value) => {
+      document.getElementById(id).textContent = value;
+    };
+    const setError = (id, message) => {
+      const error = document.getElementById(id);
+      error.textContent = message;
+      error.classList.toggle("hidden", !message);
+    };
+    const localInputValue = value => {
+      const date = new Date(value);
+      const pad = number => String(number).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    };
+    const openForm = async dateValue => {
+      form.reset();
+      setError("meeting-form-error", "");
+      const start = dateValue && dateValue.includes("T")
+        ? localInputValue(dateValue)
+        : `${dateValue || localInputValue(new Date()).slice(0, 10)}T09:00`;
+      const startDate = new Date(start);
+      startDate.setHours(startDate.getHours() + 1);
+      form.elements.start_at.value = start;
+      form.elements.end_at.value = localInputValue(startDate);
+      attendeesBox.textContent = "Cargando asistentes...";
+      showModal(formModal);
+
+      try {
+        const response = await fetch("/api/members");
+        if (!response.ok) throw new Error("No se pudieron cargar los asistentes.");
+        const members = await response.json();
+        attendeesBox.replaceChildren();
+        if (!members.length) {
+          attendeesBox.textContent = "No hay personas registradas.";
+          return;
+        }
+        members.forEach(member => {
+          const label = document.createElement("label");
+          label.className = "flex cursor-pointer items-center gap-2 text-slate-300";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.name = "attendee_ids";
+          checkbox.value = member.id;
+          checkbox.className = "rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500";
+          const name = document.createElement("span");
+          name.textContent = member.name;
+          label.append(checkbox, name);
+          attendeesBox.appendChild(label);
+        });
+      } catch (error) {
+        attendeesBox.textContent = error.message;
+      }
+      form.elements.title.focus();
+    };
+
+    document.querySelectorAll("[data-close-modal]").forEach(button => {
+      button.addEventListener("click", () => closeModal(document.getElementById(button.dataset.closeModal)));
+    });
+    [formModal, detailModal].forEach(modal => {
+      modal.addEventListener("click", event => {
+        if (event.target === modal) closeModal(modal);
+      });
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        [formModal, detailModal].forEach(modal => {
+          if (!modal.classList.contains("hidden")) closeModal(modal);
+        });
+      }
+    });
+    document.getElementById("meeting-create-button")?.addEventListener("click", () => openForm());
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      setError("meeting-form-error", "");
+      const payload = {
+        title: form.elements.title.value.trim(),
+        description: form.elements.description.value.trim(),
+        start_at: form.elements.start_at.value,
+        end_at: form.elements.end_at.value,
+        location: form.elements.location.value.trim(),
+        meeting_url: form.elements.meeting_url.value.trim(),
+        recurrence: form.elements.recurrence.value,
+        attendee_ids: [...form.querySelectorAll("[name='attendee_ids']:checked")].map(input => Number(input.value))
+      };
+      try {
+        const response = await fetch("/api/meetings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "No se pudo guardar la reunión.");
+        closeModal(formModal);
+        calendar.refetchEvents();
+      } catch (error) {
+        setError("meeting-form-error", error.message);
+      }
+    });
+
+    document.getElementById("meeting-delete-button").addEventListener("click", async () => {
+      const confirmText = "¿Eliminar esta reunión" +
+        (document.getElementById("meeting-detail-recurrence").dataset.recurring === "true" ? " y todas sus repeticiones" : "") + "?";
+      if (!window.confirm(confirmText)) return;
+      try {
+        const response = await fetch(`/api/meetings/${activeMeetingId}`, { method: "DELETE" });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "No se pudo eliminar la reunión.");
+        closeModal(detailModal);
+        calendar.refetchEvents();
+      } catch (error) {
+        setError("meeting-detail-error", error.message);
+      }
+    });
+
+    const openMeetingDetails = async event => {
+      activeMeetingId = event.extendedProps.meetingId;
+      setError("meeting-detail-error", "");
+      setText("meeting-detail-title", event.title.replace(/^Reunión:\s*/, ""));
+      setText("meeting-detail-description", "Cargando detalles...");
+      showModal(detailModal);
+      try {
+        const response = await fetch(`/api/meetings/${activeMeetingId}`);
+        const meeting = await response.json();
+        if (!response.ok) throw new Error(meeting.error || "No se pudieron cargar los detalles.");
+        const recurrenceLabels = { none: "No se repite", weekly: "Cada semana", monthly: "Cada mes" };
+        const start = event.start || new Date(meeting.start_at);
+        const end = event.end || new Date(meeting.end_at);
+        setText("meeting-detail-title", meeting.title);
+        setText("meeting-detail-description", meeting.description || "Sin notas.");
+        setText("meeting-detail-time", `${start.toLocaleString("es")} – ${end.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}`);
+        setText("meeting-detail-recurrence", recurrenceLabels[meeting.recurrence] || meeting.recurrence);
+        document.getElementById("meeting-detail-recurrence").dataset.recurring = String(meeting.recurrence !== "none");
+
+        const locationRow = document.getElementById("meeting-detail-location-row");
+        locationRow.classList.toggle("hidden", !meeting.location);
+        setText("meeting-detail-location", meeting.location);
+        const linkRow = document.getElementById("meeting-detail-link-row");
+        linkRow.classList.toggle("hidden", !meeting.meeting_url);
+        const link = document.getElementById("meeting-detail-link");
+        link.href = meeting.meeting_url || "#";
+        link.textContent = meeting.meeting_url || "";
+
+        const attendees = document.getElementById("meeting-detail-attendees");
+        attendees.replaceChildren();
+        if (meeting.attendees.length) {
+          meeting.attendees.forEach(person => {
+            const chip = document.createElement("span");
+            chip.className = "rounded-full bg-slate-700 px-3 py-1 text-xs text-slate-300";
+            chip.textContent = person.name;
+            attendees.appendChild(chip);
+          });
+        } else {
+          attendees.textContent = "Sin asistentes";
+        }
+      } catch (error) {
+        setText("meeting-detail-description", "");
+        setError("meeting-detail-error", error.message);
+      }
+    };
+
+    calendar.setOption("dateClick", info => openForm(info.dateStr));
+    calendar.setOption("eventClick", info => {
+      info.jsEvent.preventDefault();
+      if (info.event.extendedProps.eventType === "meeting") {
+        openMeetingDetails(info.event);
+      } else if (onTaskClick) {
+        onTaskClick(info.event);
+      }
+    });
+  };
+})();
+</script>

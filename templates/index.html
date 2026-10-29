@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kanban | Tablero Kanban</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
+  <meta http-equiv="refresh" content="0; url={{ url_for('dashboard') }}">
+</head>
+<body class="bg-slate-900 text-slate-200 min-h-screen font-sans antialiased">
+  <div class="flex items-center justify-center h-screen">
+    <div class="text-center">
+      <p class="text-slate-400 mb-2">Redirigiendo al dashboard...</p>
+      <a href="{{ url_for('dashboard') }}" class="text-indigo-400 hover:text-indigo-300 underline">Click aquí si no se redirige automáticamente</a>
+    </div>
+  </div>
+</body>
+</html>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tablero Kanban</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
+  <style>
+    .kanban-col::-webkit-scrollbar { width: 4px; }
+    .kanban-col::-webkit-scrollbar-track { background: transparent; }
+    .kanban-col::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .sortable-ghost { opacity: 0.25; background: #e2e8f0 !important; border: 2px dashed #94a3b8 !important; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    .card-enter { animation: fadeIn .22s ease-out; }
+    .tag-chip.selected { outline: 2px solid #1d4ed8; outline-offset: 2px; }
+    .member-chip.selected { outline: 2px solid #1d4ed8; outline-offset: 2px; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans antialiased">
+
+<!-- ===================== SIDEBAR ===================== -->
+<div class="flex h-screen overflow-hidden">
+
+  <aside id="sidebar"
+    class="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 z-20">
+
+    <!-- Logo -->
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+      <img src="/static/logo.png" alt="Logo"
+           class="h-8 w-auto object-contain shrink-0" />
+           <p>Tablero Kanban Gotuplas</p>
+    </div>
+
+    <!-- Boards list -->
+    <div class="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-2 mb-2">Tableros</p>
+      <div id="boards-list" class="space-y-1"></div>
+    </div>
+
+    <!-- Sidebar footer actions -->
+    <div class="p-3 border-t border-slate-100 space-y-2">
+      <button id="btn-new-board"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+               text-indigo-600 hover:bg-indigo-50 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nuevo tablero
+      </button>
+      <button id="btn-manage-members"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+               text-slate-600 hover:bg-slate-100 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Personas
+      </button>
+      <button id="btn-manage-tags"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+               text-slate-600 hover:bg-slate-100 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+        </svg>
+        Etiquetas
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN AREA ===================== -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Top bar -->
+    <header class="bg-white border-b border-slate-200 shadow-sm shrink-0">
+      <div class="px-6 py-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 id="board-title" class="text-lg font-semibold text-slate-800">—</h1>
+            <p id="board-desc" class="text-xs text-slate-400"></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- Board members avatars -->
+            <div id="board-members-bar" class="flex -space-x-2"></div>
+            <a href="{{ url_for('dashboard') }}"
+              class="text-sm font-medium text-slate-600 hover:text-indigo-600 px-2 py-2">Dashboard</a>
+            <a href="{{ url_for('calendario') }}"
+              class="text-sm font-medium text-slate-600 hover:text-indigo-600 px-2 py-2">Calendario</a>
+            <form method="post" action="{{ url_for('logout') }}">
+              <button class="text-sm font-medium text-slate-500 hover:text-red-600 px-2 py-2">
+                Salir ({{ username }})
+              </button>
+            </form>
+            <button id="btn-new-task"
+              class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700
+                     text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+              </svg>
+              Nueva tarea
+            </button>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-500 whitespace-nowrap">Progreso</span>
+          <div class="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
+            <div id="progress-bar"
+              class="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500"
+              style="width:0%"></div>
+          </div>
+          <span id="progress-label" class="text-xs font-semibold text-slate-600 whitespace-nowrap">0 / 0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Board columns -->
+    <main id="board-area" class="flex-1 overflow-x-auto overflow-y-hidden px-4 py-5">
+      <div class="grid grid-cols-4 gap-4 h-full min-w-[900px]">
+
+        <!-- Por Hacer -->
+        <div class="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 flex items-center justify-between border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+              <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Por Hacer</h2>
+            </div>
+            <span id="count-todo" class="text-xs font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-todo" data-status="todo"
+            class="kanban-col flex-1 p-3 space-y-3 overflow-y-auto min-h-[80px]"></div>
+        </div>
+
+        <!-- En Progreso -->
+        <div class="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 flex items-center justify-between border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">En Progreso</h2>
+            </div>
+            <span id="count-in_progress" class="text-xs font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-in_progress" data-status="in_progress"
+            class="kanban-col flex-1 p-3 space-y-3 overflow-y-auto min-h-[80px]"></div>
+        </div>
+
+        <!-- En Revisión -->
+        <div class="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 flex items-center justify-between border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+              <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">En Revisión</h2>
+            </div>
+            <span id="count-review" class="text-xs font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-review" data-status="review"
+            class="kanban-col flex-1 p-3 space-y-3 overflow-y-auto min-h-[80px]"></div>
+        </div>
+
+        <!-- Completado -->
+        <div class="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 flex items-center justify-between border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Completado</h2>
+            </div>
+            <span id="count-done" class="text-xs font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-done" data-status="done"
+            class="kanban-col flex-1 p-3 space-y-3 overflow-y-auto min-h-[80px]"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Board ===================== -->
+<div id="board-modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+    <div class="bg-indigo-600 px-6 py-4 flex items-center justify-between">
+      <h3 id="board-modal-title" class="text-lg font-semibold text-white">Nuevo tablero</h3>
+      <button id="board-modal-close" class="text-indigo-200 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="board-form" class="px-6 py-5 space-y-4">
+      <input type="hidden" id="board-form-id" />
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Nombre <span class="text-red-500">*</span></label>
+        <input id="board-form-name" type="text" maxlength="100" placeholder="Nombre del tablero"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+        <input id="board-form-desc" type="text" maxlength="300" placeholder="Opcional"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Color</label>
+        <input id="board-form-color" type="color" value="#1d4ed8"
+          class="h-10 w-full rounded-lg border border-slate-300 cursor-pointer p-1" />
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg">Guardar</button>
+        <button type="button" id="board-modal-cancel" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium py-2 rounded-lg">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Members ===================== -->
+<div id="members-modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+    <div class="bg-indigo-600 px-6 py-4 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-white">Personas</h3>
+      <button id="members-modal-close" class="text-indigo-200 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="space-y-2">
+        <input id="new-member-name" type="text" maxlength="100" placeholder="Nombre *"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <input id="new-member-email" type="email" maxlength="150" placeholder="Email (opcional)"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <div class="flex gap-2">
+          <input id="new-member-color" type="color" value="#1d4ed8"
+            class="h-10 w-14 rounded-lg border border-slate-300 cursor-pointer p-1" />
+          <button id="btn-create-member"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg">
+            Agregar persona
+          </button>
+        </div>
+      </div>
+      <div id="members-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Tags ===================== -->
+<div id="tags-modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+    <div class="bg-indigo-600 px-6 py-4 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-white">Etiquetas</h3>
+      <button id="tags-modal-close" class="text-indigo-200 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="flex gap-2">
+        <input id="new-tag-name" type="text" maxlength="50" placeholder="Nombre"
+          class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <input id="new-tag-color" type="color" value="#1d4ed8"
+          class="h-10 w-12 rounded-lg border border-slate-300 cursor-pointer p-1" />
+        <button id="btn-create-tag"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg">
+          Agregar
+        </button>
+      </div>
+      <div id="tags-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Task (create/edit) ===================== -->
+<div id="task-modal-overlay"
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[90vh] overflow-hidden">
+    <div class="bg-indigo-600 px-6 py-4 flex items-center justify-between shrink-0">
+      <h3 id="task-modal-title" class="text-lg font-semibold text-white">Nueva tarea</h3>
+      <button id="task-modal-close" class="text-indigo-200 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="task-form" class="px-6 py-5 space-y-4 overflow-y-auto" novalidate>
+      <input type="hidden" id="form-task-id" />
+      <!-- Title -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Título <span class="text-red-500">*</span></label>
+        <input id="form-title" type="text" maxlength="200"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400"
+          placeholder="Descripción breve" />
+        <p id="title-error" class="text-xs text-red-500 mt-1 hidden">El título es obligatorio.</p>
+      </div>
+      <!-- Description -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+        <textarea id="form-desc" rows="2" maxlength="1000"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"
+          placeholder="Detalles adicionales (opcional)"></textarea>
+      </div>
+      <!-- Status + Priority -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+          <select id="form-status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            <option value="todo">Por Hacer</option>
+            <option value="in_progress">En Progreso</option>
+            <option value="review">En Revisión</option>
+            <option value="done">Completado</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Prioridad</label>
+          <select id="form-priority" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            <option value="baja">Baja</option>
+            <option value="media" selected>Media</option>
+            <option value="alta">Alta</option>
+          </select>
+        </div>
+      </div>
+      <!-- Deadline -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Fecha de inicio</label>
+        <input id="form-fecha-inicio" type="date"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
+        <input id="form-deadline" type="date"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white" />
+      </div>
+      <!-- Assignee -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Asignar a</label>
+        <div id="assignee-selector" class="flex flex-wrap gap-2">
+          <span class="text-xs text-slate-400 italic">No hay personas. Agrégalas desde "Personas".</span>
+        </div>
+      </div>
+      <!-- Tags -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Etiquetas</label>
+        <div id="tag-selector" class="flex flex-wrap gap-2">
+          <span class="text-xs text-slate-400 italic">No hay etiquetas.</span>
+        </div>
+      </div>
+      <!-- Actions -->
+      <div class="flex gap-3 pb-1">
+        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg">Guardar</button>
+        <button type="button" id="task-modal-cancel" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium py-2 rounded-lg">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Task Detail + Comments ===================== -->
+<div id="detail-modal-overlay"
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 flex flex-col max-h-[90vh] overflow-hidden">
+    <!-- Header -->
+    <div class="bg-indigo-600 px-6 py-4 flex items-center justify-between shrink-0">
+      <h3 id="detail-title" class="text-lg font-semibold text-white truncate pr-4">Detalle de tarea</h3>
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="detail-edit-btn"
+          class="text-indigo-200 hover:text-white transition-colors text-sm font-medium border border-indigo-400 hover:border-white px-3 py-1 rounded-lg">
+          Editar
+        </button>
+        <button id="detail-modal-close" class="text-indigo-200 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      <!-- Task info -->
+      <div class="px-6 pt-5 pb-3 border-b border-slate-100 space-y-3">
+        <p id="detail-desc" class="text-sm text-slate-600"></p>
+        <div class="flex flex-wrap gap-3 text-xs text-slate-500">
+          <span id="detail-status"  class="flex items-center gap-1"></span>
+          <span id="detail-priority" class="flex items-center gap-1"></span>
+          <span id="detail-deadline" class="flex items-center gap-1"></span>
+        </div>
+        <div id="detail-assignee" class="flex items-center gap-2"></div>
+        <div id="detail-tags" class="flex flex-wrap gap-1"></div>
+      </div>
+
+      <!-- Comments -->
+      <div class="px-6 py-4 space-y-4">
+        <h4 class="text-sm font-semibold text-slate-700">Comentarios</h4>
+        <div id="comments-list" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
+
+        <!-- New comment form -->
+        <div class="space-y-2 pt-1">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Autor</label>
+            <select id="comment-author"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+              <option value="">Sin autor</option>
+            </select>
+          </div>
+          <textarea id="comment-body" rows="2" maxlength="1000"
+            placeholder="Escribe un comentario..."
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 resize-none"></textarea>
+          <button id="btn-add-comment"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg transition-colors">
+            Agregar comentario
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TOAST ===================== -->
+<div id="toast"
+  class="fixed bottom-6 right-6 z-[60] hidden max-w-xs px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white flex items-center gap-2">
+  <svg id="toast-icon" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<!-- ===================== EMPTY STATE ===================== -->
+<div id="empty-state" class="hidden fixed inset-0 flex items-center justify-center z-10 pointer-events-none">
+  <div class="text-center pointer-events-auto">
+    <div class="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+      </svg>
+    </div>
+    <p class="text-slate-500 text-sm mb-3">No tienes tableros aún.</p>
+    <button onclick="document.getElementById('btn-new-board').click()"
+      class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+      Crear primer tablero
+    </button>
+  </div>
+</div>
+
+
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+(() => {
+"use strict";
+
+// ----------------------------------------------------------------
+// State
+// ----------------------------------------------------------------
+const COLUMNS = ["todo","in_progress","review","done"];
+const STATUS_LABEL = { todo:"Por Hacer", in_progress:"En Progreso", review:"En Revisión", done:"Completado" };
+const PRIORITY_LABEL = { alta:"Alta", media:"Media", baja:"Baja" };
+const PRIORITY_CLASS = {
+  alta:  "bg-red-100 text-red-700 border border-red-200",
+  media: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+  baja:  "bg-green-100 text-green-700 border border-green-200",
+};
+const DL_CLASS  = { overdue:"text-red-600 font-semibold", today:"text-orange-500 font-semibold", soon:"text-amber-600", ok:"text-slate-400" };
+const DL_ICON   = { overdue:"⚠️", today:"🔥", soon:"⏰", ok:"📅" };
+
+let currentBoardId  = null;
+let allBoards       = [];
+let allMembers      = [];
+let allTags         = [];
+let selectedTagIds  = [];
+let selectedAssigneeId = null;
+let currentDetailTaskId = null;
+
+const COL = id => document.getElementById(`col-${id}`);
+const CNT = id => document.getElementById(`count-${id}`);
+
+// ----------------------------------------------------------------
+// Helpers
+// ----------------------------------------------------------------
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function avatar(member, size="w-7 h-7"){
+  if(member.avatar_url)
+    return `<img src="${esc(member.avatar_url)}" alt="${esc(member.name)}"
+             class="${size} rounded-full object-cover border-2 border-white" title="${esc(member.name)}" />`;
+  return `<span class="${size} rounded-full flex items-center justify-center text-white text-[10px] font-bold border-2 border-white shrink-0"
+           style="background-color:${esc(member.color)}" title="${esc(member.name)}">${esc(member.initials)}</span>`;
+}
+
+let toastTimer;
+function showToast(msg, type="success"){
+  const el=document.getElementById("toast"), icon=document.getElementById("toast-icon"), txt=document.getElementById("toast-msg");
+  clearTimeout(toastTimer);
+  el.className = el.className.replace(/bg-\S+/g,"");
+  if(type==="success"){ el.classList.add("bg-emerald-600"); icon.innerHTML=`<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>`; }
+  else                { el.classList.add("bg-red-600");     icon.innerHTML=`<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>`; }
+  txt.textContent=msg; el.classList.remove("hidden");
+  toastTimer=setTimeout(()=>el.classList.add("hidden"),3000);
+}
+
+// ----------------------------------------------------------------
+// Avatar initials fallback
+// ----------------------------------------------------------------
+function buildCard(task){
+  const card = document.createElement("div");
+  card.className = "card-enter bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing p-3 select-none group";
+  card.dataset.id = task.id;
+
+  const tagsHtml = task.tags&&task.tags.length
+    ? `<div class="flex flex-wrap gap-1 mb-2">${task.tags.map(t=>`<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full text-white" style="background-color:${esc(t.color)}">${esc(t.name)}</span>`).join("")}</div>`
+    : "";
+
+  let dlHtml = "";
+  if(task.deadline){
+    dlHtml = `<span class="text-[10px] ${DL_CLASS[task.dl_status]||"text-slate-400"} flex items-center gap-0.5">
+      <span>${DL_ICON[task.dl_status]||"📅"}</span>${task.dl_status==="overdue"?"Venció: "+task.deadline:task.dl_status==="today"?"Hoy":task.deadline}
+    </span>`;
+  }
+
+  const assigneeHtml = task.assignee
+    ? `<div class="flex items-center gap-1 mt-1">${avatar(task.assignee,"w-5 h-5")}<span class="text-[10px] text-slate-500">${esc(task.assignee.name)}</span></div>`
+    : "";
+
+  const commentBadge = task.comment_count > 0
+    ? `<span class="flex items-center gap-0.5 text-[10px] text-slate-400">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>${task.comment_count}
+      </span>`
+    : "";
+
+  card.innerHTML = `
+    <div class="flex items-start justify-between gap-2 mb-1">
+      <p class="text-sm font-semibold text-slate-800 leading-snug line-clamp-2 flex-1">${esc(task.title)}</p>
+      <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button data-action="detail" data-id="${task.id}" aria-label="Ver detalle"
+          class="p-1 rounded hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+        </button>
+        <button data-action="edit" data-id="${task.id}" aria-label="Editar"
+          class="p-1 rounded hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 3.487a2.25 2.25 0 013.182 3.182L7.5 19.213l-4 1 1-4 12.362-12.726z"/>
+          </svg>
+        </button>
+        <button data-action="delete" data-id="${task.id}" aria-label="Eliminar"
+          class="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+          <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    ${task.description?`<p class="text-xs text-slate-500 line-clamp-2 mb-1">${esc(task.description)}</p>`:""}
+    ${tagsHtml}
+    ${assigneeHtml}
+    <div class="flex items-center justify-between mt-2 flex-wrap gap-1">
+      <span class="text-xs font-medium px-2 py-0.5 rounded-full ${PRIORITY_CLASS[task.priority]}">${PRIORITY_LABEL[task.priority]}</span>
+      <div class="flex items-center gap-2">${dlHtml}${commentBadge}</div>
+    </div>`;
+  return card;
+}
+
+// ----------------------------------------------------------------
+// Progress
+// ----------------------------------------------------------------
+function updateProgress(grouped){
+  const total = COLUMNS.reduce((s,c)=>s+(grouped[c]||[]).length,0);
+  const done  = (grouped["done"]||[]).length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+  document.getElementById("progress-bar").style.width = pct+"%";
+  document.getElementById("progress-label").textContent = `${done} / ${total}`;
+}
+
+// ----------------------------------------------------------------
+// Render board
+// ----------------------------------------------------------------
+function renderBoard(grouped){
+  COLUMNS.forEach(s=>{
+    const col=COL(s); col.innerHTML="";
+    (grouped[s]||[]).forEach(t=>col.appendChild(buildCard(t)));
+    CNT(s).textContent=(grouped[s]||[]).length;
+  });
+  updateProgress(grouped);
+}
+
+// ----------------------------------------------------------------
+// Load tasks for current board
+// ----------------------------------------------------------------
+async function loadTasks(){
+  if(!currentBoardId) return;
+  try{
+    const res=await fetch(`/api/boards/${currentBoardId}/tasks`);
+    if(!res.ok) throw new Error();
+    renderBoard(await res.json());
+  }catch{ showToast("Error cargando tareas.","error"); }
+}
+
+// ----------------------------------------------------------------
+// SortableJS
+// ----------------------------------------------------------------
+COLUMNS.forEach(status=>{
+  Sortable.create(COL(status),{
+    group:"kanban", animation:180, ghostClass:"sortable-ghost",
+    onEnd(evt){
+      const destCol=evt.to, srcCol=evt.from;
+      const destStatus=destCol.dataset.status, srcStatus=srcCol.dataset.status;
+      const destItems=[...destCol.querySelectorAll("[data-id]")].map((el,i)=>({id:+el.dataset.id,status:destStatus,position:i}));
+      let payload=destItems;
+      if(srcCol!==destCol){
+        const srcItems=[...srcCol.querySelectorAll("[data-id]")].map((el,i)=>({id:+el.dataset.id,status:srcStatus,position:i}));
+        payload=[...destItems,...srcItems];
+        CNT(destStatus).textContent=destCol.querySelectorAll("[data-id]").length;
+        CNT(srcStatus).textContent =srcCol.querySelectorAll("[data-id]").length;
+      }
+      saveOrder(payload);
+    }
+  });
+});
+
+async function saveOrder(items){
+  try{
+    const res=await fetch("/api/tasks/reorder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(items)});
+    if(!res.ok) throw new Error();
+    const r2=await fetch(`/api/boards/${currentBoardId}/tasks`);
+    const g=await r2.json();
+    updateProgress(g);
+    COLUMNS.forEach(s=>CNT(s).textContent=(g[s]||[]).length);
+  }catch{ showToast("Error guardando orden.","error"); loadTasks(); }
+}
+
+// ----------------------------------------------------------------
+// Boards sidebar
+// ----------------------------------------------------------------
+async function loadBoards(){
+  const res=await fetch("/api/boards");
+  allBoards=await res.json();
+  renderBoardsSidebar();
+  if(allBoards.length){
+    if(!currentBoardId || !allBoards.find(b=>b.id===currentBoardId))
+      selectBoard(allBoards[0].id);
+  } else {
+    document.getElementById("empty-state").classList.remove("hidden");
+    document.getElementById("board-title").textContent="Sin tableros";
+    document.getElementById("board-desc").textContent="";
+    document.getElementById("board-members-bar").innerHTML="";
+    COLUMNS.forEach(s=>{ COL(s).innerHTML=""; CNT(s).textContent=0; });
+  }
+}
+
+function renderBoardsSidebar(){
+  const container=document.getElementById("boards-list");
+  document.getElementById("empty-state").classList.add("hidden");
+  container.innerHTML=allBoards.map(b=>`
+    <div class="group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors
+                ${b.id===currentBoardId?"bg-indigo-50 text-indigo-700":"text-slate-600 hover:bg-slate-100"}"
+         data-board-id="${b.id}">
+      <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color:${esc(b.color)}"></span>
+      <span class="text-sm font-medium truncate flex-1">${esc(b.name)}</span>
+      <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button data-edit-board="${b.id}"
+          class="p-0.5 rounded hover:text-indigo-600 transition-colors">
+          <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 3.487a2.25 2.25 0 013.182 3.182L7.5 19.213l-4 1 1-4 12.362-12.726z"/>
+          </svg>
+        </button>
+        <button data-delete-board="${b.id}"
+          class="p-0.5 rounded hover:text-red-500 transition-colors">
+          <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>`).join("");
+}
+
+document.getElementById("boards-list").addEventListener("click", async e=>{
+  const editBtn  = e.target.closest("[data-edit-board]");
+  const delBtn   = e.target.closest("[data-delete-board]");
+  const boardRow = e.target.closest("[data-board-id]");
+
+  if(editBtn){
+    const id=+editBtn.dataset.editBoard;
+    const board=allBoards.find(b=>b.id===id);
+    if(board) openBoardModal(board);
+    return;
+  }
+  if(delBtn){
+    const id=+delBtn.dataset.deleteBoard;
+    if(!confirm("¿Eliminar este tablero y todas sus tareas?")) return;
+    await fetch(`/api/boards/${id}`,{method:"DELETE"});
+    if(currentBoardId===id) currentBoardId=null;
+    await loadBoards();
+    showToast("Tablero eliminado");
+    return;
+  }
+  if(boardRow){ selectBoard(+boardRow.dataset.boardId); }
+});
+
+async function selectBoard(id){
+  currentBoardId=id;
+  const board=allBoards.find(b=>b.id===id);
+  if(board){
+    document.getElementById("board-title").textContent=board.name;
+    document.getElementById("board-desc").textContent=board.description||"";
+  }
+  renderBoardsSidebar();
+  await loadBoardMembers(id);
+  await loadTasks();
+}
+
+async function loadBoardMembers(boardId){
+  try{
+    const res=await fetch("/api/boards");
+    const boards=await res.json();
+    const board=boards.find(b=>b.id===boardId);
+    // get full member data for this board from members API
+    const mRes=await fetch("/api/members");
+    allMembers=await mRes.json();
+    // members on board come from board detail — refetch with dedicated endpoint not available,
+    // so we show all members in the bar for simplicity
+    const bar=document.getElementById("board-members-bar");
+    bar.innerHTML=allMembers.slice(0,5).map(m=>avatar(m)).join("")
+      +(allMembers.length>5?`<span class="w-7 h-7 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-500">+${allMembers.length-5}</span>`:"");
+  }catch{}
+}
+
+// ----------------------------------------------------------------
+// Board modal
+// ----------------------------------------------------------------
+function openBoardModal(board=null){
+  document.getElementById("board-modal-title").textContent=board?"Editar tablero":"Nuevo tablero";
+  document.getElementById("board-form-id").value=board?board.id:"";
+  document.getElementById("board-form-name").value=board?board.name:"";
+  document.getElementById("board-form-desc").value=board?board.description:"";
+  document.getElementById("board-form-color").value=board?board.color:"#1d4ed8";
+  document.getElementById("board-modal-overlay").classList.remove("hidden");
+  document.getElementById("board-form-name").focus();
+}
+function closeBoardModal(){ document.getElementById("board-modal-overlay").classList.add("hidden"); }
+document.getElementById("btn-new-board").addEventListener("click",()=>openBoardModal());
+document.getElementById("board-modal-close").addEventListener("click",closeBoardModal);
+document.getElementById("board-modal-cancel").addEventListener("click",closeBoardModal);
+document.getElementById("board-modal-overlay").addEventListener("click",e=>{ if(e.target===document.getElementById("board-modal-overlay")) closeBoardModal(); });
+
+document.getElementById("board-form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const name=document.getElementById("board-form-name").value.trim();
+  if(!name){ showToast("El nombre es obligatorio.","error"); return; }
+  const id=document.getElementById("board-form-id").value;
+  const payload={name,description:document.getElementById("board-form-desc").value.trim(),color:document.getElementById("board-form-color").value};
+  const url=id?`/api/boards/${id}`:"/api/boards";
+  const method=id?"PATCH":"POST";
+  const res=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!res.ok){ showToast("Error guardando tablero.","error"); return; }
+  const board=await res.json();
+  closeBoardModal();
+  await loadBoards();
+  if(!id) selectBoard(board.id);
+  showToast(id?"Tablero actualizado":"Tablero creado");
+});
+
+// ----------------------------------------------------------------
+// Members modal
+// ----------------------------------------------------------------
+async function loadMembers(){
+  const res=await fetch("/api/members");
+  allMembers=await res.json();
+  renderMembersList();
+  renderAssigneeSelector();
+  renderCommentAuthorSelect();
+}
+
+function renderMembersList(){
+  const c=document.getElementById("members-list");
+  if(!allMembers.length){ c.innerHTML=`<p class="text-sm text-slate-400 italic text-center py-4">Sin personas aún.</p>`; return; }
+  c.innerHTML=allMembers.map(m=>`
+    <div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50">
+      <div class="flex items-center gap-2">
+        ${avatar(m,"w-7 h-7")}
+        <div><p class="text-sm text-slate-700 font-medium">${esc(m.name)}</p>${m.email?`<p class="text-xs text-slate-400">${esc(m.email)}</p>`:""}</div>
+      </div>
+      <button data-del-member="${m.id}" class="text-slate-300 hover:text-red-500 transition-colors p-1 rounded">
+        <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>`).join("");
+}
+
+document.getElementById("members-modal-overlay").addEventListener("click",e=>{ if(e.target===document.getElementById("members-modal-overlay")) document.getElementById("members-modal-overlay").classList.add("hidden"); });
+document.getElementById("members-modal-close").addEventListener("click",()=>document.getElementById("members-modal-overlay").classList.add("hidden"));
+document.getElementById("btn-manage-members").addEventListener("click",()=>{ document.getElementById("members-modal-overlay").classList.remove("hidden"); loadMembers(); });
+
+document.getElementById("btn-create-member").addEventListener("click",async()=>{
+  const name=document.getElementById("new-member-name").value.trim();
+  if(!name){ showToast("El nombre es obligatorio.","error"); return; }
+  const res=await fetch("/api/members",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    name, email:document.getElementById("new-member-email").value.trim(), color:document.getElementById("new-member-color").value
+  })});
+  if(!res.ok){ const d=await res.json(); showToast(d.error||"Error.","error"); return; }
+  document.getElementById("new-member-name").value="";
+  document.getElementById("new-member-email").value="";
+  await loadMembers();
+  showToast("Persona agregada");
+});
+
+document.getElementById("members-list").addEventListener("click",async e=>{
+  const btn=e.target.closest("[data-del-member]");
+  if(!btn) return;
+  if(!confirm("¿Eliminar esta persona?")) return;
+  await fetch(`/api/members/${btn.dataset.delMember}`,{method:"DELETE"});
+  await loadMembers();
+  showToast("Persona eliminada");
+});
+
+// ----------------------------------------------------------------
+// Tags modal
+// ----------------------------------------------------------------
+async function loadTags(){
+  const res=await fetch("/api/tags");
+  allTags=await res.json();
+  renderTagsList();
+  renderTagSelector();
+}
+
+function renderTagsList(){
+  const c=document.getElementById("tags-list");
+  if(!allTags.length){ c.innerHTML=`<p class="text-sm text-slate-400 italic text-center py-4">Sin etiquetas.</p>`; return; }
+  c.innerHTML=allTags.map(t=>`
+    <div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full" style="background-color:${esc(t.color)}"></span>
+        <span class="text-sm text-slate-700">${esc(t.name)}</span>
+      </div>
+      <button data-del-tag="${t.id}" class="text-slate-300 hover:text-red-500 transition-colors p-1 rounded">
+        <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>`).join("");
+}
+
+document.getElementById("tags-modal-overlay").addEventListener("click",e=>{ if(e.target===document.getElementById("tags-modal-overlay")) document.getElementById("tags-modal-overlay").classList.add("hidden"); });
+document.getElementById("tags-modal-close").addEventListener("click",()=>document.getElementById("tags-modal-overlay").classList.add("hidden"));
+document.getElementById("btn-manage-tags").addEventListener("click",()=>{ document.getElementById("tags-modal-overlay").classList.remove("hidden"); loadTags(); });
+
+document.getElementById("btn-create-tag").addEventListener("click",async()=>{
+  const name=document.getElementById("new-tag-name").value.trim();
+  if(!name){ showToast("Escribe un nombre.","error"); return; }
+  const res=await fetch("/api/tags",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,color:document.getElementById("new-tag-color").value})});
+  if(!res.ok){ showToast("Error.","error"); return; }
+  document.getElementById("new-tag-name").value="";
+  await loadTags();
+  showToast("Etiqueta creada");
+});
+
+document.getElementById("tags-list").addEventListener("click",async e=>{
+  const btn=e.target.closest("[data-del-tag]");
+  if(!btn) return;
+  if(!confirm("¿Eliminar esta etiqueta?")) return;
+  await fetch(`/api/tags/${btn.dataset.delTag}`,{method:"DELETE"});
+  selectedTagIds=selectedTagIds.filter(x=>x!==+btn.dataset.delTag);
+  await loadTags();
+  showToast("Etiqueta eliminada");
+});
+
+document.getElementById("tags-list").addEventListener("click",async e=>{
+  const btn=e.target.closest("[data-del-tag]");
+  if(!btn) return;
+  if(!confirm("¿Eliminar esta etiqueta?")) return;
+  await fetch(`/api/tags/${btn.dataset.delTag}`,{method:"DELETE"});
+  selectedTagIds=selectedTagIds.filter(x=>x!==+btn.dataset.delTag);
+  await loadTags();
+  showToast("Etiqueta eliminada");
+});
+
+// ----------------------------------------------------------------
+// Assignee selector in task form
+// ----------------------------------------------------------------
+function renderAssigneeSelector(){
+  const c=document.getElementById("assignee-selector");
+  if(!allMembers.length){ c.innerHTML=`<span class="text-xs text-slate-400 italic">No hay personas. Agrégalas desde "Personas".</span>`; return; }
+  c.innerHTML=`<span class="member-chip text-xs font-medium px-2 py-1 rounded-full border cursor-pointer transition-colors
+    ${selectedAssigneeId===null?"bg-slate-200 text-slate-600 border-slate-300":"bg-white text-slate-400 border-slate-200"}"
+    data-member-id="null">Sin asignar</span>`
+  + allMembers.map(m=>`
+    <span class="member-chip flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border cursor-pointer transition-colors
+      ${selectedAssigneeId===m.id?"border-indigo-400 bg-indigo-50":"border-slate-200 bg-white text-slate-600"}"
+      data-member-id="${m.id}">
+      ${avatar(m,"w-4 h-4")} ${esc(m.name)}
+    </span>`).join("");
+}
+
+document.getElementById("assignee-selector").addEventListener("click",e=>{
+  const chip=e.target.closest("[data-member-id]");
+  if(!chip) return;
+  selectedAssigneeId = chip.dataset.memberId==="null" ? null : +chip.dataset.memberId;
+  renderAssigneeSelector();
+});
+
+function renderTagSelector(){
+  const c=document.getElementById("tag-selector");
+  if(!allTags.length){ c.innerHTML=`<span class="text-xs text-slate-400 italic">No hay etiquetas.</span>`; return; }
+  c.innerHTML=allTags.map(t=>`
+    <span class="tag-chip text-xs font-medium px-2 py-1 rounded-full text-white cursor-pointer
+                 ${selectedTagIds.includes(t.id)?"selected":""}"
+          style="background-color:${esc(t.color)}" data-tag-id="${t.id}">${esc(t.name)}</span>`).join("");
+}
+
+document.getElementById("tag-selector").addEventListener("click",e=>{
+  const chip=e.target.closest("[data-tag-id]");
+  if(!chip) return;
+  const id=+chip.dataset.tagId;
+  if(selectedTagIds.includes(id)){ selectedTagIds=selectedTagIds.filter(x=>x!==id); chip.classList.remove("selected"); }
+  else { selectedTagIds.push(id); chip.classList.add("selected"); }
+});
+
+// ----------------------------------------------------------------
+// Task modal (create/edit)
+// ----------------------------------------------------------------
+function openTaskModal(task=null){
+  selectedTagIds=[]; selectedAssigneeId=null;
+  document.getElementById("title-error").classList.add("hidden");
+  document.getElementById("task-modal-title").textContent=task?"Editar tarea":"Nueva tarea";
+  document.getElementById("form-task-id").value=task?task.id:"";
+  document.getElementById("form-title").value=task?task.title:"";
+  document.getElementById("form-desc").value=task?task.description:"";
+  document.getElementById("form-status").value=task?task.status:"todo";
+  document.getElementById("form-priority").value=task?task.priority:"media";
+  document.getElementById("form-fecha-inicio").value=task?task.fecha_inicio||"":"";
+  document.getElementById("form-deadline").value=task?task.deadline_iso||"":"";
+  if(task){ selectedTagIds=(task.tags||[]).map(t=>t.id); selectedAssigneeId=task.assignee?task.assignee.id:null; }
+  renderTagSelector();
+  renderAssigneeSelector();
+  document.getElementById("task-modal-overlay").classList.remove("hidden");
+  document.getElementById("form-title").focus();
+}
+function closeTaskModal(){ document.getElementById("task-modal-overlay").classList.add("hidden"); }
+document.getElementById("btn-new-task").addEventListener("click",()=>openTaskModal());
+document.getElementById("task-modal-close").addEventListener("click",closeTaskModal);
+document.getElementById("task-modal-cancel").addEventListener("click",closeTaskModal);
+document.getElementById("task-modal-overlay").addEventListener("click",e=>{ if(e.target===document.getElementById("task-modal-overlay")) closeTaskModal(); });
+
+document.getElementById("task-form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const title=document.getElementById("form-title").value.trim();
+  if(!title){ document.getElementById("title-error").classList.remove("hidden"); return; }
+  document.getElementById("title-error").classList.add("hidden");
+  const id=document.getElementById("form-task-id").value;
+  const payload={
+    title, description:document.getElementById("form-desc").value.trim(),
+    status:document.getElementById("form-status").value,
+    priority:document.getElementById("form-priority").value,
+    fecha_inicio:document.getElementById("form-fecha-inicio").value||null,
+    deadline:document.getElementById("form-deadline").value||null,
+    tag_ids:selectedTagIds, assignee_id:selectedAssigneeId,
+  };
+  const url=id?`/api/tasks/${id}`:`/api/boards/${currentBoardId}/tasks`;
+  const method=id?"PATCH":"POST";
+  try{
+    const res=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||"Error");
+    closeTaskModal();
+    await loadTasks();
+    showToast(id?"Tarea actualizada":"Tarea creada");
+  }catch(err){ showToast(err.message,"error"); }
+});
+
+// ----------------------------------------------------------------
+// Detail modal + comments
+// ----------------------------------------------------------------
+function renderCommentAuthorSelect(){
+  const sel=document.getElementById("comment-author");
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">Sin autor</option>`
+    +allMembers.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  sel.value=cur;
+}
+
+async function openDetailModal(taskId){
+  currentDetailTaskId=taskId;
+  try{
+    const res=await fetch(`/api/tasks/${taskId}`);
+    if(!res.ok) throw new Error();
+    const task=await res.json();
+    renderDetailModal(task);
+    document.getElementById("detail-modal-overlay").classList.remove("hidden");
+  }catch{ showToast("Error cargando tarea.","error"); }
+}
+
+function renderDetailModal(task){
+  document.getElementById("detail-title").textContent=task.title;
+  document.getElementById("detail-desc").textContent=task.description||"Sin descripción.";
+
+  document.getElementById("detail-status").innerHTML=
+    `<span class="font-medium text-slate-700">${STATUS_LABEL[task.status]||task.status}</span>`;
+  document.getElementById("detail-priority").innerHTML=
+    `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_CLASS[task.priority]}">${PRIORITY_LABEL[task.priority]}</span>`;
+
+  const dlEl=document.getElementById("detail-deadline");
+  if(task.deadline){
+    dlEl.innerHTML=`<span class="text-xs ${DL_CLASS[task.dl_status]||""}">${DL_ICON[task.dl_status]||"📅"} ${task.deadline}</span>`;
+  } else { dlEl.innerHTML=""; }
+
+  const assigneeEl=document.getElementById("detail-assignee");
+  assigneeEl.innerHTML=task.assignee
+    ?`${avatar(task.assignee,"w-7 h-7")}<span class="text-sm text-slate-700">${esc(task.assignee.name)}${task.assignee.email?` &mdash; <span class="text-slate-400">${esc(task.assignee.email)}</span>`:""}</span>`
+    :`<span class="text-xs text-slate-400 italic">Sin asignar</span>`;
+
+  document.getElementById("detail-tags").innerHTML=(task.tags||[]).map(t=>
+    `<span class="text-xs font-medium px-2 py-0.5 rounded-full text-white" style="background-color:${esc(t.color)}">${esc(t.name)}</span>`
+  ).join("");
+
+  renderComments(task.comments||[]);
+  document.getElementById("detail-edit-btn").dataset.taskId=task.id;
+  document.getElementById("comment-body").value="";
+}
+
+function renderComments(comments){
+  const c=document.getElementById("comments-list");
+  if(!comments.length){ c.innerHTML=`<p class="text-xs text-slate-400 italic text-center py-2">Sin comentarios aún.</p>`; return; }
+  c.innerHTML=comments.map(cm=>`
+    <div class="flex gap-3 group">
+      <div class="shrink-0 mt-0.5">
+        ${cm.author ? avatar(cm.author,"w-7 h-7") : `<span class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs">?</span>`}
+      </div>
+      <div class="flex-1 bg-slate-50 rounded-xl px-3 py-2">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-slate-700">${cm.author?esc(cm.author.name):"Anónimo"}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-400">${cm.created_at}</span>
+            <button data-del-comment="${cm.id}"
+              class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-500">
+              <svg class="w-3 h-3 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600 whitespace-pre-wrap">${esc(cm.body)}</p>
+      </div>
+    </div>`).join("");
+}
+
+document.getElementById("detail-modal-overlay").addEventListener("click",e=>{ if(e.target===document.getElementById("detail-modal-overlay")) document.getElementById("detail-modal-overlay").classList.add("hidden"); });
+document.getElementById("detail-modal-close").addEventListener("click",()=>document.getElementById("detail-modal-overlay").classList.add("hidden"));
+
+document.getElementById("detail-edit-btn").addEventListener("click",async()=>{
+  const taskId=document.getElementById("detail-edit-btn").dataset.taskId;
+  document.getElementById("detail-modal-overlay").classList.add("hidden");
+  const res=await fetch(`/api/tasks/${taskId}`);
+  const task=await res.json();
+  openTaskModal(task);
+});
+
+document.getElementById("btn-add-comment").addEventListener("click",async()=>{
+  const body=document.getElementById("comment-body").value.trim();
+  if(!body){ showToast("Escribe un comentario.","error"); return; }
+  const authorId=document.getElementById("comment-author").value||null;
+  try{
+    const res=await fetch(`/api/tasks/${currentDetailTaskId}/comments`,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({body,author_id:authorId?+authorId:null})
+    });
+    if(!res.ok) throw new Error();
+    document.getElementById("comment-body").value="";
+    // reload detail
+    const r2=await fetch(`/api/tasks/${currentDetailTaskId}`);
+    const task=await r2.json();
+    renderComments(task.comments||[]);
+    // update badge on card
+    const card=document.querySelector(`[data-id="${currentDetailTaskId}"]`);
+    if(card){
+      const badge=card.querySelector(".comment-badge");
+      // just reload tasks to update badge
+      await loadTasks();
+    }
+    showToast("Comentario agregado");
+  }catch{ showToast("Error al comentar.","error"); }
+});
+
+document.getElementById("comments-list").addEventListener("click",async e=>{
+  const btn=e.target.closest("[data-del-comment]");
+  if(!btn) return;
+  if(!confirm("¿Eliminar este comentario?")) return;
+  await fetch(`/api/comments/${btn.dataset.delComment}`,{method:"DELETE"});
+  const res=await fetch(`/api/tasks/${currentDetailTaskId}`);
+  const task=await res.json();
+  renderComments(task.comments||[]);
+  await loadTasks();
+  showToast("Comentario eliminado");
+});
+
+// ----------------------------------------------------------------
+// Board area delegation (edit / delete / detail cards)
+// ----------------------------------------------------------------
+document.querySelector("#board-area").addEventListener("click",async e=>{
+  const btn=e.target.closest("[data-action]");
+  if(!btn) return;
+  const action=btn.dataset.action, taskId=+btn.dataset.id;
+
+  if(action==="detail"){ openDetailModal(taskId); }
+
+  if(action==="edit"){
+    try{
+      const res=await fetch(`/api/tasks/${taskId}`);
+      const task=await res.json();
+      openTaskModal(task);
+    }catch{ showToast("Error.","error"); }
+  }
+
+  if(action==="delete"){
+    if(!confirm("¿Eliminar esta tarea?")) return;
+    await fetch(`/api/tasks/${taskId}`,{method:"DELETE"});
+    await loadTasks();
+    showToast("Tarea eliminada");
+  }
+});
+
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){
+  ["task-modal-overlay","board-modal-overlay","members-modal-overlay","tags-modal-overlay","detail-modal-overlay"]
+    .forEach(id=>document.getElementById(id).classList.add("hidden"));
+}});
+
+// ----------------------------------------------------------------
+// Init
+// ----------------------------------------------------------------
+async function init(){
+  await loadMembers();
+  await loadTags();
+  await loadBoards();
+}
+init();
+
+})();
+</script>
+</body>
+</html>
